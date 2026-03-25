@@ -1,0 +1,88 @@
+# ─────────────────────────────────────────────────────────────
+# Start-OllamaInstances.ps1
+# Launches two Ollama instances:
+#   - Port 11434 → RTX 5070 Ti (GPU 0) — LLM inference
+#   - Port 11435 → Nvidia T400  (GPU 1) — Embedding model
+#
+# Usage: Right-click → "Run with PowerShell"
+#        OR run from terminal: .\Start-OllamaInstances.ps1
+# ─────────────────────────────────────────────────────────────
+
+Write-Host ""
+Write-Host "=========================================" -ForegroundColor Cyan
+Write-Host "  Ollama Dual-GPU Launcher" -ForegroundColor Cyan
+Write-Host "=========================================" -ForegroundColor Cyan
+Write-Host ""
+
+# ── Stop any existing Ollama processes to start clean ────────
+Write-Host "[*] Stopping any existing Ollama processes..." -ForegroundColor Yellow
+Get-Process -Name "ollama" -ErrorAction SilentlyContinue | Stop-Process -Force
+Start-Sleep -Seconds 2
+Write-Host "    Done." -ForegroundColor Green
+Write-Host ""
+
+# ── Instance 1: RTX 5070 Ti — LLM (port 11434) ───────────────
+Write-Host "[1] Starting LLM instance on RTX 5070 Ti (GPU 0) → port 11434..." -ForegroundColor Yellow
+
+$llmProcess = Start-Process powershell -ArgumentList @(
+    "-NoExit",
+    "-Command",
+    "`$env:CUDA_VISIBLE_DEVICES='0'; `$env:OLLAMA_HOST='127.0.0.1:11434'; ollama serve"
+) -PassThru
+
+Start-Sleep -Seconds 4
+Write-Host "    PID: $($llmProcess.Id)" -ForegroundColor Green
+Write-Host ""
+
+# ── Instance 2: T400 — Embeddings (port 11435) ───────────────
+Write-Host "[2] Starting Embedding instance on T400 (GPU 1) → port 11435..." -ForegroundColor Yellow
+
+$embedProcess = Start-Process powershell -ArgumentList @(
+    "-NoExit",
+    "-Command",
+    "`$env:CUDA_VISIBLE_DEVICES='1'; `$env:OLLAMA_HOST='127.0.0.1:11435'; ollama serve"
+) -PassThru
+
+Start-Sleep -Seconds 4
+Write-Host "    PID: $($embedProcess.Id)" -ForegroundColor Green
+Write-Host ""
+
+# ── Verify both instances ─────────────────────────────────────
+Write-Host "[*] Verifying instances..." -ForegroundColor Yellow
+Start-Sleep -Seconds 6
+
+$llmOk    = $false
+$embedOk  = $false
+
+try {
+    Invoke-RestMethod http://localhost:11434/api/tags -ErrorAction Stop | Out-Null
+    $llmOk = $true
+    Write-Host "    [11434] LLM instance     ✅ Online" -ForegroundColor Green
+} catch {
+    Write-Host "    [11434] LLM instance     ❌ Not responding — check the new window" -ForegroundColor Red
+}
+
+try {
+    Invoke-RestMethod http://localhost:11435/api/tags -ErrorAction Stop | Out-Null
+    $embedOk = $true
+    Write-Host "    [11435] Embedding instance ✅ Online" -ForegroundColor Green
+} catch {
+    Write-Host "    [11435] Embedding instance ❌ Not responding — check the new window" -ForegroundColor Red
+}
+
+Write-Host ""
+Write-Host "=========================================" -ForegroundColor Cyan
+if ($llmOk -and $embedOk) {
+    Write-Host "  Both instances launched successfully." -ForegroundColor Cyan
+    Write-Host "  You can now run your RAG pipeline." -ForegroundColor Cyan
+} elseif ($llmOk -or $embedOk) {
+    Write-Host "  One instance launched. Check the" -ForegroundColor Yellow
+    Write-Host "  failed window for errors." -ForegroundColor Yellow
+} else {
+    Write-Host "  No instances responded. Check both" -ForegroundColor Red
+    Write-Host "  windows for errors." -ForegroundColor Red
+}
+Write-Host "=========================================" -ForegroundColor Cyan
+Write-Host ""
+Write-Host "Press any key to exit this window..."
+$null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")

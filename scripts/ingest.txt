@@ -1,0 +1,76 @@
+import os
+from llama_index.core import SimpleDirectoryReader, VectorStoreIndex, StorageContext, Settings
+from llama_index.embeddings.ollama import OllamaEmbedding
+from llama_index.llms.ollama import Ollama
+from llama_index.vector_stores.qdrant import QdrantVectorStore
+from qdrant_client import QdrantClient
+
+# ─────────────────────────────────────────
+# CONFIGURATION
+# ─────────────────────────────────────────
+DOCS_PATH       = r"C:\RAG\documents"
+QDRANT_HOST     = "localhost"
+QDRANT_PORT     = 6333
+COLLECTION_NAME = "rag_documents"
+EMBED_MODEL     = "nomic-embed-text"
+LLM_MODEL       = "qwen3_cline_roocode:14b"
+LLM_BASE_URL    = "http://localhost:11434"   # 5070 Ti
+EMBED_BASE_URL  = "http://localhost:11435"   # T400
+
+# ─────────────────────────────────────────
+# STEP 1 — Configure embedding & LLM
+# ─────────────────────────────────────────
+print("[1/4] Configuring embedding model and LLM...")
+
+Settings.embed_model = OllamaEmbedding(
+    model_name=EMBED_MODEL,
+    base_url=EMBED_BASE_URL        # T400 instance
+)
+
+Settings.llm = Ollama(
+    model=LLM_MODEL,
+    base_url=LLM_BASE_URL,         # 5070 Ti instance
+    request_timeout=120.0
+)
+
+# ─────────────────────────────────────────
+# STEP 2 — Load documents
+# ─────────────────────────────────────────
+print("[2/4] Loading documents from:", DOCS_PATH)
+
+reader = SimpleDirectoryReader(
+    input_dir=DOCS_PATH,
+    recursive=True,          # includes subfolders
+    filename_as_id=True      # tracks source file per chunk
+)
+
+documents = reader.load_data()
+print(f"       Loaded {len(documents)} document(s)")
+
+# ─────────────────────────────────────────
+# STEP 3 — Connect to Qdrant
+# ─────────────────────────────────────────
+print("[3/4] Connecting to Qdrant...")
+
+qdrant_client = QdrantClient(host=QDRANT_HOST, port=QDRANT_PORT)
+vector_store   = QdrantVectorStore(
+    client=qdrant_client,
+    collection_name=COLLECTION_NAME
+)
+storage_context = StorageContext.from_defaults(vector_store=vector_store)
+
+# ─────────────────────────────────────────
+# STEP 4 — Chunk, embed, and store
+# ─────────────────────────────────────────
+print("[4/4] Chunking, embedding and indexing documents...")
+print("      This may take a few minutes depending on document size...")
+
+index = VectorStoreIndex.from_documents(
+    documents,
+    storage_context=storage_context,
+    show_progress=True
+)
+
+print("\n✅ Ingestion complete!")
+print(f"   Collection '{COLLECTION_NAME}' is ready in Qdrant.")
+print(f"   You can verify at: http://localhost:6333/dashboard")
