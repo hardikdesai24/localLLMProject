@@ -6,4 +6,4 @@ __pycache__/
 .Python
 bin/
 lib/
-rag_env/
+rag-env/
