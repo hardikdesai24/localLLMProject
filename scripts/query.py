@@ -1,6 +1,8 @@
 import os
 import re
+from typing import cast
 from llama_index.core import VectorStoreIndex, Settings
+from llama_index.core.base.response.schema import Response
 from llama_index.embeddings.ollama import OllamaEmbedding
 from llama_index.llms.ollama import Ollama
 from llama_index.vector_stores.qdrant import QdrantVectorStore
@@ -168,7 +170,8 @@ while True:
     print(f"\n⏳ Searching [{label}]...\n")
 
     response     = query_engine.query(question)
-    clean_answer = clean_response(response.response)
+    assert hasattr(response, "response"), "Unexpected streaming response type"
+    clean_answer = clean_response(cast(Response, response).response)
 
     print("💬 Answer:")
     print("-" * 65)
