@@ -1,23 +1,19 @@
 import os
 import re
+import sys
+sys.stdout.reconfigure(encoding='utf-8')
 from typing import cast
 from llama_index.core import VectorStoreIndex, Settings
 from llama_index.core.base.response.schema import Response
-from llama_index.embeddings.ollama import OllamaEmbedding
-from llama_index.llms.ollama import Ollama
+from llama_index.embeddings.openai import OpenAIEmbedding
+from llama_index.llms.openai import OpenAI
 from llama_index.vector_stores.qdrant import QdrantVectorStore
 from llama_index.core import StorageContext
 from qdrant_client import QdrantClient
 
-# ─────────────────────────────────────────
-# GPU ASSIGNMENT
-# Embedding → T400    (port 11435)
-# LLM       → 5070 Ti (port 11434)
-# ─────────────────────────────────────────
-EMBED_MODEL      = "nomic-embed-text"
-EMBED_OLLAMA_URL = "http://localhost:11435"
-LLM_MODEL        = "nemotron-3-nano:4b"
-LLM_OLLAMA_URL   = "http://localhost:11434"
+OPENAI_API_KEY   = os.environ.get("OPENAI_API_KEY")
+EMBED_MODEL      = "text-embedding-3-small"
+LLM_MODEL        = "gpt-4o-mini"
 QDRANT_HOST      = "localhost"
 QDRANT_PORT      = 6333
 TOP_K            = 5
@@ -54,17 +50,16 @@ def clean_response(text):
 # CONFIGURE MODELS
 # ─────────────────────────────────────────
 print("\n[INIT] Loading models...")
-print(f"       Embedding : {EMBED_MODEL} → T400    @ {EMBED_OLLAMA_URL}")
-print(f"       LLM       : {LLM_MODEL} → 5070 Ti @ {LLM_OLLAMA_URL}\n")
+print(f"       Embedding : {EMBED_MODEL} (OpenAI)")
+print(f"       LLM       : {LLM_MODEL} (OpenAI)\n")
 
-Settings.embed_model = OllamaEmbedding(
-    model_name=EMBED_MODEL,
-    base_url=EMBED_OLLAMA_URL
+Settings.embed_model = OpenAIEmbedding(
+    model=EMBED_MODEL,
+    api_key=OPENAI_API_KEY
 )
-Settings.llm = Ollama(
+Settings.llm = OpenAI(
     model=LLM_MODEL,
-    base_url=LLM_OLLAMA_URL,
-    request_timeout=360.0
+    api_key=OPENAI_API_KEY
 )
 
 qdrant_client = QdrantClient(host=QDRANT_HOST, port=QDRANT_PORT)

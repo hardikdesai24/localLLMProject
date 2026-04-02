@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python scripts/ingest_multi.py)",
+      "Bash(python scripts/query.py)",
+      "Bash(pip install:*)"
+    ]
+  }
+}
