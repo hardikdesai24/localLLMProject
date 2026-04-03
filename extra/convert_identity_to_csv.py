@@ -1,17 +1,14 @@
+# convert_identity_to_csv.py
 import json
 import csv
 import os
 
-# ─────────────────────────────────────────
 # CONFIGURATION
-# ─────────────────────────────────────────
 INPUT_FILE  = r"C:\RAG\documents\IdentityAccess.json"
 OUTPUT_DIR  = r"C:\RAG\documents\processed"
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
-# ─────────────────────────────────────────
 # HELPER — flatten a dict, skip nulls
-# ─────────────────────────────────────────
 def flatten(obj, prefix="", max_depth=3, depth=0):
     result = {}
     if depth > max_depth or not isinstance(obj, dict):
@@ -62,9 +59,7 @@ def write_csv(records, output_path, label):
     print(f"     → {len(flat_records):,} rows | {len(all_keys)} columns | {size_kb:.1f} KB")
     return len(flat_records)
 
-# ─────────────────────────────────────────
 # LOAD JSON
-# ─────────────────────────────────────────
 print("\n[1/3] Loading IdentityAccess.json (313MB)...")
 print("      This will take 1-2 minutes...")
 
@@ -73,9 +68,7 @@ with open(INPUT_FILE, "r", encoding="utf-8") as f:
 
 print("      Loaded successfully!\n")
 
-# ─────────────────────────────────────────
 # EXTRACT TENANT INFO
-# ─────────────────────────────────────────
 print("[2/3] Extracting sections...\n")
 
 tenant = data.get("Tenant", {})
@@ -83,9 +76,7 @@ if tenant:
     path = os.path.join(OUTPUT_DIR, "identity_tenant.csv")
     write_csv([tenant], path, "Tenant Info")
 
-# ─────────────────────────────────────────
 # EXTRACT PIM ROLE ASSIGNMENTS
-# ─────────────────────────────────────────
 pim_records = data.get("PIMRoleAssignments", [])
 write_csv(
     pim_records,
@@ -93,9 +84,7 @@ write_csv(
     "PIM Role Assignments"
 )
 
-# ─────────────────────────────────────────
 # EXTRACT GUEST USERS
-# ─────────────────────────────────────────
 guest_records = data.get("GuestUsers", [])
 write_csv(
     guest_records,
@@ -103,9 +92,7 @@ write_csv(
     "Guest Users"
 )
 
-# ─────────────────────────────────────────
 # EXTRACT MFA REGISTRATION DETAILS
-# ─────────────────────────────────────────
 mfa_records = data.get("MfaRegistrationDetails", [])
 write_csv(
     mfa_records,
@@ -113,9 +100,7 @@ write_csv(
     "MFA Registration Details"
 )
 
-# ─────────────────────────────────────────
 # EXTRACT HIGH PRIVILEGE APP REGISTRATIONS
-# ─────────────────────────────────────────
 app_records = data.get("HighPrivilegeAppRegistrations", [])
 write_csv(
     app_records,
@@ -123,9 +108,7 @@ write_csv(
     "High Privilege App Registrations"
 )
 
-# ─────────────────────────────────────────
 # SUMMARY
-# ─────────────────────────────────────────
 print("\n[3/3] Summary")
 print("=" * 60)
 print(f"  Output folder : {OUTPUT_DIR}")
