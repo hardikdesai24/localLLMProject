@@ -1,0 +1,22 @@
+Q: What is the location of the rental property?
+A: the real estate located at Stationsstraat 12, 2590 Berlaar Kontich
+
+Q: Who is the tenant?
+A: Calimero BV
+as Lessee
+
+Q: Who is the landlord?
+A: Huppeldepup NV as Lessor
+
+Q: What is the rental price?
+A: 6 Rent and indexation
+6.1 The base rent is EUR 876 per month. The rent is payable in advance no later than the fifth Working Day of the month to which it relates. The rent must be transferred to account number BE 55 5656 5656 5656 in the name of the Lessor with reference "Rent Berlaar". The rent shall be due for the first time for the month of November, and this no later than November 1, 2023.
+
+6.2 The rent shall be annually adjusted on the anniversary of this Agreement's date to the cost of living (with the understanding that this will happen for the first time in November 2024) according to the following formula:
+
+new rent = (base rent x new index figure) / initial index figure,
+
+where:
+(i) the base rent is the rent mentioned in Article 6.1
+(ii) the new index figure is the health index figure for January of the year in which the rent is adjusted and
+(iii) the initial index figure is the health index figure for November 2023.

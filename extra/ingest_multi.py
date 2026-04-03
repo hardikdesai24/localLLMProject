@@ -1,75 +1,52 @@
+# ingest_multi.py
 import os
 import sys
 from llama_index.core import SimpleDirectoryReader, VectorStoreIndex, StorageContext, Settings
-from llama_index.embeddings.ollama import OllamaEmbedding
-from llama_index.llms.ollama import Ollama
+from llama_index.embeddings.openai import OpenAIEmbedding
+from llama_index.llms.openai import OpenAI
 from llama_index.vector_stores.qdrant import QdrantVectorStore
 from qdrant_client import QdrantClient
 
-# ─────────────────────────────────────────
-# GPU ASSIGNMENT
-# Embedding → T400   (port 11435)
-# LLM       → 5070 Ti (port 11434)
-# ─────────────────────────────────────────
-EMBED_MODEL      = "nomic-embed-text"
-EMBED_OLLAMA_URL = "http://localhost:11435"
-LLM_MODEL        = "nemotron-3-nano:4b"
-LLM_OLLAMA_URL   = "http://localhost:11434"
-QDRANT_HOST      = "localhost"
-QDRANT_PORT      = 6333
+os.environ["OLLAMA_REQUEST_TIMEOUT"] = "600"
 
-# ─────────────────────────────────────────
+from dotenv import load_dotenv
+load_dotenv()
+
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+EMBED_MODEL = os.getenv("EMBED_MODEL", "text-embedding-3-small")
+LLM_MODEL = os.getenv("LLM_MODEL", "gpt-4.1-mini")
+QDRANT_HOST = os.getenv("QDRANT_HOST", "localhost")
+QDRANT_PORT = int(os.getenv("QDRANT_PORT", "6333"))
+DOCS_PATH = os.getenv("DOCS_PATH")
+DOCS_PATH_PROCESSED = DOCS_PATH
+
 # FILE → COLLECTION MAPPING
 # Each file gets its own isolated collection
-# ─────────────────────────────────────────
 FILE_COLLECTION_MAP = {
-    "DefenderForCloud.json"        : "rag_defender",
-    "NetworkSecurity.json"         : "rag_network",
-    "GovernanceAndPolicy.json"     : "rag_governance",
-    "FinOpsAndCost.json"           : "rag_finops",
-    "DataPlatform.json"            : "rag_dataplatform",
-    "OperationsAndMonitoring.json" : "rag_operations",
-    "ModernisationAndPaaS.json"    : "rag_modernisation",
-    "ResilienceAndBCDR.json"       : "rag_resilience",
-    "Context.json"                 : "rag_context",
-
-# Identity CSVs (processed from IdentityAccess.json)
-    "identity_mfa.csv"             : "rag_identity_mfa",
-    "identity_pim.csv"             : "rag_identity_pim",
-    "identity_apps.csv"            : "rag_identity_apps",
-    "identity_guests.csv"          : "rag_identity_guests",
-    "identity_tenant.csv"          : "rag_identity_tenant",
-
+    "rag-doc.pdf": "rag_doc",
 }
 
 # Files to skip entirely (e.g. logs)
 SKIP_FILES = ["errors.log"]
 
-DOCS_PATH = r"C:\RAG\documents"
-DOCS_PATH_PROCESSED = r"C:\RAG\documents\processed"
-
-# ─────────────────────────────────────────
 # CONFIGURE MODELS
-# ─────────────────────────────────────────
-print("\n[INIT] Configuring models...")
-print(f"       Embedding : {EMBED_MODEL} @ {EMBED_OLLAMA_URL}")
-print(f"       LLM       : {LLM_MODEL} @ {LLM_OLLAMA_URL}")
+print("\n[INIT] Loading models...")
+print(f"       Embedding : {EMBED_MODEL}")
+print(f"       LLM       : {LLM_MODEL}\n")
 
-Settings.embed_model = OllamaEmbedding(
-    model_name=EMBED_MODEL,
-    base_url=EMBED_OLLAMA_URL
+Settings.embed_model = OpenAIEmbedding(
+    model=EMBED_MODEL,
+    api_key=OPENAI_API_KEY,
 )
-Settings.llm = Ollama(
+
+Settings.llm = OpenAI(
     model=LLM_MODEL,
-    base_url=LLM_OLLAMA_URL,
-    request_timeout=180.0
+    api_key=OPENAI_API_KEY,
 )
 
 qdrant_client = QdrantClient(host=QDRANT_HOST, port=QDRANT_PORT)
 
-# ─────────────────────────────────────────
 # INGEST EACH FILE INTO ITS OWN COLLECTION
-# ─────────────────────────────────────────
 total_files = len(FILE_COLLECTION_MAP)
 completed   = 0
 skipped     = 0
@@ -138,9 +115,7 @@ for filename, collection_name in FILE_COLLECTION_MAP.items():
         print(f"        ❌ Failed: {e}\n")
         failed.append(filename)
 
-# ─────────────────────────────────────────
 # SUMMARY
-# ─────────────────────────────────────────
 print("=" * 60)
 print(f"\n✅ Ingestion Summary:")
 print(f"   Completed : {completed} collections")
